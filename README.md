@@ -8,7 +8,9 @@ Microsoft Edge was the go-to option since Bing Rewards provides a few extra poin
 ## Prerequisites
 
 .NET 8 SDK - Download it from: https://dotnet.microsoft.com/pt-br/download/dotnet/8.0
+
 Microsoft Edge - Download it from: https://www.microsoft.com/pt-br/edge/download?form=MA13FJ
+
 Edge WebDriver - Download the latest version (or based on your Microsoft Edge version) from: https://developer.microsoft.com/en-us/microsoft-edge/tools/webdriver/
 
 ## How to use
