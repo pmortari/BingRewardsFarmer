@@ -1,6 +1,6 @@
 # BingRewardsFarmer
 
-This project aim to provide a way to farm your daily points on Bing Rewards without having to actually use Bing as your search engine.
+This project aims to provide a way to farm your daily points on Bing Rewards without having to actually use Bing as your search engine.
 
 With this application, based on a set of parameters that are provided through a settings file, you can simple execute (on your IDE and/or executable file) and the job is done: Microsoft Edge will be executed and perform the necessary searches on Bing for you (Mobile included!).
 Microsoft Edge was the go-to option since Bing Rewards provides a few extra points if you are using Edge, so it was a no-brainer. Maybe so, but maybe not: further browsers to be added in the future.
