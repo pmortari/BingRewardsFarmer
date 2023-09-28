@@ -1,37 +1,50 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using BingRewardsFarmer.Resources;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium.Edge;
+using System.Reflection;
 
 namespace BingRewardsFarmer
 {
     internal class Program
     {
-        private static int? NumberOfIterations;
-        private static int? NumberOfMobileIterations;
-        private static string? EdgeDriverLocation;
-        private static string? HomePage;
-        private static string? ProfileDirectory;
-        private static string? UserDataLocation;
-        private static int ThreadSleepInMiliseconds;
-        private static string? BingSearchPage;
-        private static string? MobileDeviceToEmulate;
+        private static Settings ConfigurationSettings;
+
         private static IConfiguration? Config;
         private static ILogger? Log;
 
         private static void Main(string[] args)
         {
-            ConfiguraLogging();
+            InitializeProperties();
+
+            ConfigureLogging();
 
             ValidateConfiguration();
 
-            FarmRegularPoints();
+            FarmPoints(SearchType.Regular);
 
-            Thread.Sleep(ThreadSleepInMiliseconds);
+            Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
 
-            FarmMobilePoints();
+            FarmPoints(SearchType.Mobile);
         }
 
-        private static void ConfiguraLogging()
+        private static void FarmPoints(SearchType searchType)
+        {
+            var driver = SetupDriver(searchType);
+
+            Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
+
+            SearchOnBing(driver, searchType);
+
+            DisposeDriver(driver);
+        }
+
+        private static void InitializeProperties()
+        {
+            ConfigurationSettings = new Settings();
+        }
+
+        private static void ConfigureLogging()
         {
             using var loggerFactory = LoggerFactory.Create(builder =>
             {
@@ -45,65 +58,6 @@ namespace BingRewardsFarmer
             Log = loggerFactory.CreateLogger<Program>();
         }
 
-        private static void FarmRegularPoints()
-        {
-            var driver = SetupDriver(SearchType.Regular);
-
-            Thread.Sleep(ThreadSleepInMiliseconds);
-
-            SearchOnBing(driver, NumberOfIterations);
-
-            CloseDriver(driver);
-        }
-
-        private static void FarmMobilePoints()
-        {
-            var driver = SetupDriver(SearchType.Mobile);
-
-            Thread.Sleep(ThreadSleepInMiliseconds);
-
-            SearchOnBing(driver, NumberOfMobileIterations);
-
-            CloseDriver(driver);
-        }
-
-        private static void CloseDriver(EdgeDriver driver)
-        {
-            driver.Quit();
-            driver.Dispose();
-        }
-
-        private static EdgeDriver SetupDriver(SearchType searchType)
-        {
-            var options = new EdgeOptions();
-            options.AddArgument($"--user-data-dir={UserDataLocation}");
-            options.AddArgument($"--profile-directory={ProfileDirectory}");
-
-            if (searchType == SearchType.Mobile)
-            {
-                options.EnableMobileEmulation(MobileDeviceToEmulate);
-                options.AddUserProfilePreference("safebrowsing.enabled", true);
-                options.AddUserProfilePreference("credentials_enable_service", false);
-                options.AddUserProfilePreference("profile.password_manager_enabled", false);
-            }
-
-            var driver = new EdgeDriver(EdgeDriverLocation, options) { Url = HomePage };
-
-            return driver;
-        }
-
-        private static void SearchOnBing(EdgeDriver driver, int? iterations)
-        {
-            for (int i = 0; i < iterations; i++)
-            {
-                var url = $"{BingSearchPage}{Guid.NewGuid()}";
-
-                driver.Navigate().GoToUrl(url);
-                Thread.Sleep(ThreadSleepInMiliseconds);
-            }
-        }
-
-        //TODO: Still need proper implementation
         private static void ValidateConfiguration()
         {
             var builder = new ConfigurationBuilder()
@@ -112,54 +66,75 @@ namespace BingRewardsFarmer
 
             Config = builder.Build();
 
-            try
+            foreach (var propertyInfo in ConfigurationSettings.GetType()
+                            .GetProperties(
+                                    BindingFlags.Public
+                                    | BindingFlags.Instance))
             {
-                Log.LogInformation("Validating Number of Iterations");
-                NumberOfIterations = Convert.ToInt16(Config["NumberOfIterations"]);
-                Log.LogInformation($"Number of Iterations: {NumberOfIterations}");
-
-                Log.LogInformation("Validating Number of Mobile Iterations");
-                NumberOfMobileIterations = Convert.ToInt16(Config["NumberOfMobileIterations"]);
-                Log.LogInformation($"Number of Mobile Iterations: {NumberOfMobileIterations}");
-
-                Log.LogInformation("Validating Edge Driver Location");
-                EdgeDriverLocation = Config["EdgeDriverLocation"];
-                Log.LogInformation($"Edge Driver Location: {EdgeDriverLocation}");
-
-                Log.LogInformation("Validating Home Page");
-                HomePage = Config["HomePage"];
-                Log.LogInformation($"Home Page: {HomePage}");
-
-                Log.LogInformation("Validating User Data Location");
-                UserDataLocation = Config["UserDataLocation"];
-                Log.LogInformation($"User Data Location: {UserDataLocation}");
-
-                Log.LogInformation("Validating Profile Directory");
-                ProfileDirectory = Config["ProfileDirectory"];
-                Log.LogInformation($"Profile Directory: {ProfileDirectory}");
-
-                Log.LogInformation("Validating Thread Sleep In Miliseconds");
-                ThreadSleepInMiliseconds = Convert.ToInt32(Config["ThreadSleepInMiliseconds"]);
-                Log.LogInformation($"Thread Sleep In Miliseconds: {ThreadSleepInMiliseconds}");
-
-                Log.LogInformation("Validating Bing Search Page");
-                BingSearchPage = Config["BingSearchPage"];
-                Log.LogInformation($"Bing Search Page: {BingSearchPage}");
-
-                Log.LogInformation("Validating Mobile Device to Emulate");
-                MobileDeviceToEmulate = Config["MobileDeviceToEmulate"];
-                Log.LogInformation($"Mobile Device to Emulate: {MobileDeviceToEmulate}");
-            }
-            catch (Exception ex)
-            {
-                Log.LogInformation("One or more parameters were not provided or are invalid. Please validate your appsettings.json file.", ex);
+                ValidateProperty(propertyInfo.Name);
             }
         }
 
-        private enum SearchType
+        private static void DisposeDriver(EdgeDriver driver)
         {
-            Regular = 0,
-            Mobile = 1
+            driver.Quit();
+            driver.Dispose();
+        }
+
+        private static EdgeDriver SetupDriver(SearchType searchType)
+        {
+            var options = new EdgeOptions();
+            options.AddArgument($"--user-data-dir={ConfigurationSettings.UserDataLocation}");
+            options.AddArgument($"--profile-directory={ConfigurationSettings.ProfileDirectory}");
+
+            if (searchType == SearchType.Mobile)
+            {
+                options.EnableMobileEmulation(ConfigurationSettings.MobileDeviceToEmulate);
+                options.AddUserProfilePreference("safebrowsing.enabled", true);
+                options.AddUserProfilePreference("credentials_enable_service", false);
+                options.AddUserProfilePreference("profile.password_manager_enabled", false);
+            }
+
+            var driver = new EdgeDriver(ConfigurationSettings.EdgeDriverLocation, options) { Url = ConfigurationSettings.HomePage };
+
+            return driver;
+        }
+
+        private static void SearchOnBing(EdgeDriver driver, SearchType searchType)
+        {
+            var iterations = searchType switch
+            {
+                SearchType.Regular => ConfigurationSettings.NumberOfIterations,
+                SearchType.Mobile => ConfigurationSettings.NumberOfMobileIterations,
+                _ => 0,
+            };
+
+            for (int i = 0; i < iterations; i++)
+            {
+                var url = $"{ConfigurationSettings.BingSearchPage}{Guid.NewGuid()}";
+
+                driver.Navigate().GoToUrl(url);
+                Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
+            }
+        }
+
+        private static void ValidateProperty(string propertyName)
+        {
+            Log.LogInformation($"Validating {propertyName}");
+            var prop = ConfigurationSettings.GetType().GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
+
+            var providedValue = Convert.ChangeType(Config[propertyName], prop.PropertyType);
+
+            prop.SetValue(ConfigurationSettings, providedValue, null);
+
+            var value = ConfigurationSettings.GetType().GetProperty(propertyName).GetValue(ConfigurationSettings, null);
+
+            if (value == null)
+            {
+                throw new Exception($"{propertyName} was not provided or has an invalid value that couldn't be validated. Provided value: {providedValue} - Value: {value}");
+            }
+
+            Log.LogInformation($"{propertyName}: {value}");
         }
     }
 }
