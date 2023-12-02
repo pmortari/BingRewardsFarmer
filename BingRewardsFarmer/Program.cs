@@ -102,10 +102,12 @@ namespace BingRewardsFarmer
             {
                 var driver = SetupDriver(searchType);
 
+                var criteria = Guid.NewGuid().ToString();
+                var conversationId = Guid.NewGuid().ToString().Replace("-", string.Empty);
+
                 var url = $"{ConfigurationSettings.BingSearchPage
-                    .Replace("{criteria}", Guid.NewGuid().ToString())
-                    .Replace("{conversationId}", Guid.NewGuid().ToString()
-                    .Replace("-", string.Empty))}";
+                    .Replace("{criteria}", criteria)
+                    .Replace("{conversationId}", conversationId)}";
 
                 driver.Navigate().GoToUrl(url);
 
