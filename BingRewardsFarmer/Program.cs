@@ -21,22 +21,11 @@ namespace BingRewardsFarmer
 
             ValidateConfiguration();
 
-            FarmPoints(SearchType.Regular);
+            SearchOnBing(SearchType.Regular);
 
             Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
 
-            FarmPoints(SearchType.Mobile);
-        }
-
-        private static void FarmPoints(SearchType searchType)
-        {
-            var driver = SetupDriver(searchType);
-
-            Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
-
-            SearchOnBing(driver, searchType);
-
-            DisposeDriver(driver);
+            SearchOnBing(SearchType.Mobile);
         }
 
         private static void InitializeProperties()
@@ -100,7 +89,7 @@ namespace BingRewardsFarmer
             return driver;
         }
 
-        private static void SearchOnBing(EdgeDriver driver, SearchType searchType)
+        private static void SearchOnBing(SearchType searchType)
         {
             var iterations = searchType switch
             {
@@ -111,10 +100,18 @@ namespace BingRewardsFarmer
 
             for (int i = 0; i < iterations; i++)
             {
-                var url = $"{ConfigurationSettings.BingSearchPage}{Guid.NewGuid()}";
+                var driver = SetupDriver(searchType);
+
+                var url = $"{ConfigurationSettings.BingSearchPage
+                    .Replace("{criteria}", Guid.NewGuid().ToString())
+                    .Replace("{conversationId}", Guid.NewGuid().ToString()
+                    .Replace("-", string.Empty))}";
 
                 driver.Navigate().GoToUrl(url);
+
                 Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
+
+                DisposeDriver(driver);
             }
         }
 
