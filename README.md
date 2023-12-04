@@ -33,7 +33,11 @@ UserDataLocation: The location of your user data from Edge. By default, it will 
 
 ProfileDirectory: The folder of the profile to be used. Depending on the amount of profiles you have set up for your browser, it might be "Default", "Profile 1", etc.
 
-ThreadSleepInMiliseconds: This is the amount of time the application will wait until each search is performed on your browser. The recommended value is 2000 (2 seconds).
+ThreadSleepInMilliseconds: This is the amount of time the application will wait until each search is performed on your browser. The recommended value is 2000 (2 seconds).
+
+CooldownPeriodInMilliseconds: Time to be awaited for the search cooldown. At this moment, the cooldown is 15 minutes, so I would recommend 960000 (16 minutes).
+
+SearchesPerCooldown: The number of searches to be performed before the cooldown. At this moment, only 3 searches can be performed every 15 minutes. The recommended value is 3.
 
 BingSearchPage: Bing search endpoint, by default: "https://www.bing.com/search?q="
 
