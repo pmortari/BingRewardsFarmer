@@ -23,7 +23,7 @@ namespace BingRewardsFarmer
 
             SearchOnBing(SearchType.Regular);
 
-            Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
+            Thread.Sleep(ConfigurationSettings.ThreadSleepInMilliseconds);
 
             SearchOnBing(SearchType.Mobile);
         }
@@ -100,6 +100,8 @@ namespace BingRewardsFarmer
 
             for (int i = 0; i < iterations; i++)
             {
+                CooldownBetweenSearches(i, iterations);
+
                 var driver = SetupDriver(searchType);
 
                 var criteria = Guid.NewGuid().ToString();
@@ -111,9 +113,19 @@ namespace BingRewardsFarmer
 
                 driver.Navigate().GoToUrl(url);
 
-                Thread.Sleep(ConfigurationSettings.ThreadSleepInMiliseconds);
+                Thread.Sleep(ConfigurationSettings.ThreadSleepInMilliseconds);
 
                 DisposeDriver(driver);
+            }
+        }
+
+        private static void CooldownBetweenSearches(int currentIteration, int iterations)
+        {
+            if (currentIteration > 0 &&
+                currentIteration % ConfigurationSettings.SearchesPerCooldown == 0 &&
+                currentIteration == iterations == false)
+            {
+                Thread.Sleep(ConfigurationSettings.CooldownPeriodInMilliseconds);
             }
         }
 
